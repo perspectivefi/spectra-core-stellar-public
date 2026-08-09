@@ -1,0 +1,18 @@
+[package]
+name = "mock-ibt"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+# Deployable cdylib for the shared `spectra_mocks::mock_ibt` contract (OZ
+# FungibleVault-shaped IBT). Source is `include!`d from spectra-mocks for a
+# single source of truth. Test-only; never ships to mainnet.
+
+[lib]
+crate-type = ["cdylib", "lib"]
+
+[dependencies]
+soroban-sdk = { workspace = true }
+spectra-math = { workspace = true }
+stellar-tokens = { workspace = true }

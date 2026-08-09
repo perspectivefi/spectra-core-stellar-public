@@ -1,0 +1,57 @@
+[workspace]
+resolver = "2"
+members = [
+    "contracts/spectra-common",
+    "contracts/spectra-math",
+    "contracts/registry",
+    "contracts/yield-token",
+    "contracts/principal-token",
+    "contracts/spectra-fungible-vault-wrapper",
+    "contracts/blend-fungible-vault-wrapper",
+    "contracts/blend-types",
+    "contracts/factory",
+    "contracts/router",
+    "contracts/limit-order-engine",
+    "mocks/spectra-mocks",
+    "mocks/mock-factory-pt-init",
+    "mocks/mock-underlying",
+    "mocks/mock-ibt",
+]
+
+[workspace.package]
+version = "1.0.0"
+edition = "2024"
+license = "BUSL-1.1"
+repository = "https://github.com/perspectivefi/spectra-core-stellar-public"
+
+[workspace.dependencies]
+soroban-sdk = "25.3.0"
+soroban-token-sdk = "25.3.0"
+spectra-common = { path = "contracts/spectra-common" }
+spectra-math = { path = "contracts/spectra-math" }
+spectra-fungible-vault-wrapper = { path = "contracts/spectra-fungible-vault-wrapper" }
+spectra-mocks = { path = "mocks/spectra-mocks" }
+blend-types = { path = "contracts/blend-types" }
+bridge-traits = { git = "https://github.com/perspectivefi/spectra-stellar-bridge-public.git", rev = "be6061015fd2f468ab2a07aec8d7cf8d610f121e", package = "bridge-traits" }
+# OZ v0.7.0 — audited: https://github.com/OpenZeppelin/stellar-contracts/blob/main/audits/Stellar%20Contracts%20Library%20v0.7.0%20Audit.pdf
+stellar-access = "=0.7.0"
+stellar-macros = "=0.7.0"
+stellar-contract-utils = "=0.7.0"
+stellar-tokens = "=0.7.0"
+# Required by soroban-sdk "testutils" feature
+serde_json = "1.0"
+rand = "0.8"
+
+[profile.release]
+opt-level = "z"
+overflow-checks = true
+debug = 0
+strip = "symbols"
+debug-assertions = false
+panic = "abort"
+codegen-units = 1
+lto = true
+
+[profile.release-with-logs]
+inherits = "release"
+debug-assertions = true

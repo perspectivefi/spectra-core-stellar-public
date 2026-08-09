@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Install pinned Rust toolchain
+        run: |
+          rustup show active-toolchain
+          rustup target add wasm32v1-none --toolchain 1.96.0
+          rustc --version | grep '^rustc 1\.96\.0 '
+
+      - name: Install pinned Stellar CLI
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes libdbus-1-dev libudev-dev pkg-config
+          cargo install --locked stellar-cli --version 26.0.0
+
+      - name: Format
+        run: cargo fmt --all -- --check
+
+      - name: Build
+        run: make build
+
+      - name: Test
+        run: cargo test --workspace
+
+      - name: Clippy
+        run: >-
+          cargo clippy --workspace --all-targets --
+          -D warnings
+          -A dead_code
+          -A unused_imports

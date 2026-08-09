@@ -1,0 +1,53 @@
+{
+  "description": "Real StellarBroker route data for XLM → USDC swap captured from mainnet",
+  "captured_at": "2026-06-11",
+  "stellar_broker_contract": "CBWP275BNGLHWFTQVB6QHA67MLX7WTX6YZ5LNSUVOK7W2TMKWX7OPYOJ",
+  "quote": {
+    "sellingAsset": "XLM",
+    "buyingAsset": "USDC-GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN",
+    "sellingAmount": "10",
+    "estimatedBuyingAmount": "1.912145",
+    "slippageTolerance": 0.02
+  },
+  "directTrade": {
+    "path": ["yXLM-GARDNV3Q7YGT4AKSDF25LT32YSCCW4EV22Y2TV3I2PU2MMXJTEDL5T55"],
+    "selling": "10",
+    "buying": "1.910554"
+  },
+  "tx_xdr_hash": "f315d6a2ceea0e8c1c770d9d87922a6e0ff3e428377a772e50f83ce34050d264",
+  "tx_xdr_network_fee": "2100000",
+  "invoke_args": {
+    "selling": "CAS3J7GYLGXMF6TDJBBYYSE3HQ6BBSMLNUQ34T6TZMYMW2EVH34XOWMA",
+    "broker_contract": "CBWP275BNGLHWFTQVB6QHA67MLX7WTX6YZ5LNSUVOK7W2TMKWX7OPYOJ",
+    "routes": [
+      {
+        "path": [
+          {
+            "protocol": 0,
+            "protocol_name": "AquaConstant",
+            "asset": "CCW67TSZV3SSS2HXMBQ5JFGCKJNXKZM7UQUWUZPUTHXSTZLEO7SJMI75",
+            "asset_name": "USDC",
+            "pool": "CA6PUJLBYKZKUEKLZJMKBZLEKP2OTHANDEOWSFF44FTSYLKQPIICCJBE",
+            "si": 0,
+            "bi": 1
+          }
+        ],
+        "amount": null,
+        "min": null,
+        "estimated": null
+      }
+    ],
+    "trader": "GDZZXZZOXWDFTA2MJM2IR2TIQIENR33R2BET2KOGAYKRAEFYQOAL6CQV",
+    "vfee": 400,
+    "ffee": 0,
+    "fpath": []
+  },
+  "tokens": {
+    "XLM": "CAS3J7GYLGXMF6TDJBBYYSE3HQ6BBSMLNUQ34T6TZMYMW2EVH34XOWMA",
+    "USDC": "CCW67TSZV3SSS2HXMBQ5JFGCKJNXKZM7UQUWUZPUTHXSTZLEO7SJMI75",
+    "USDC_stellar_asset": "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN"
+  },
+  "pools": {
+    "xlm_usdc_aqua": "CA6PUJLBYKZKUEKLZJMKBZLEKP2OTHANDEOWSFF44FTSYLKQPIICCJBE"
+  }
+}

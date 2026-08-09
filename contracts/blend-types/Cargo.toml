@@ -1,0 +1,9 @@
+[package]
+name = "blend-types"
+version.workspace = true
+edition.workspace = true
+license = "MIT"
+repository.workspace = true
+
+[dependencies]
+soroban-sdk = { workspace = true }

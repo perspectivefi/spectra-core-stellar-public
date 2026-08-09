@@ -1,0 +1,27 @@
+[package]
+name = "spectra-fungible-vault-wrapper"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+# Abstract base: a pure library consumed by concrete instances (e.g. blend),
+# never deployed on its own — no `cdylib`, no `contract` feature.
+[lib]
+crate-type = ["rlib"]
+
+[dependencies]
+soroban-sdk = { workspace = true }
+spectra-common = { workspace = true }
+spectra-math = { workspace = true }
+stellar-access = { workspace = true }
+stellar-contract-utils = { workspace = true }
+stellar-macros = { workspace = true }
+stellar-tokens = { workspace = true }
+
+[dev-dependencies]
+soroban-sdk = { workspace = true, features = ["testutils"] }
+spectra-mocks = { workspace = true }
+# Matches contracts/principal-token version; both require the same SDK feature behavior.
+# "pin exact versions" rule, but cross-crate alignment dominates here.
+proptest = "1.5"

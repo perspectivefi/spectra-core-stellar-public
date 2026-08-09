@@ -1,0 +1,18 @@
+[package]
+name = "mock-underlying"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+# Deployable cdylib for the shared `spectra_mocks::mock_underlying` contract.
+# The source is `include!`d from spectra-mocks so there is a single source of
+# truth (spectra-mocks can't itself be a cdylib — it bundles several mock
+# contracts whose wasm exports would collide). Test-only; never ships to mainnet.
+
+[lib]
+crate-type = ["cdylib", "lib"]
+
+[dependencies]
+soroban-sdk = { workspace = true }
+stellar-tokens = { workspace = true }

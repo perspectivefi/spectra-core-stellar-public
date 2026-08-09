@@ -1,0 +1,8 @@
+/target
+test_snapshots/
+/.worktrees/
+
+.DS_Store
+
+# Mainnet-fork RPC caches (regenerated live per run)
+contracts/*/tests/fork_cache_*.json

@@ -1,0 +1,8 @@
+# Preserve the audited release-build settings used by scripts/build-wasm.sh:
+#   - RUSTFLAGS="-C link-arg=-zstack-size=65536" (scoped to the wasm target only)
+#   - SOROBAN_SDK_BUILD_SYSTEM_SUPPORTS_SPEC_SHAKING_V2=1
+[env]
+SOROBAN_SDK_BUILD_SYSTEM_SUPPORTS_SPEC_SHAKING_V2 = "1"
+
+[target.wasm32v1-none]
+rustflags = ["-C", "link-arg=-zstack-size=65536"]

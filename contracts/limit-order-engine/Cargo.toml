@@ -1,0 +1,44 @@
+[package]
+name = "limit-order-engine"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[lib]
+crate-type = ["cdylib", "lib"]
+
+[dependencies]
+soroban-sdk = { workspace = true }
+stellar-tokens = { workspace = true }
+spectra-common = { workspace = true }
+spectra-math = { workspace = true }
+# Abstract base wrapper crate (rlib, no deployable contract): source of the
+# `SpectraFungibleVaultWrapperClient` used to call IBT wrappers cross-contract.
+spectra-fungible-vault-wrapper = { workspace = true }
+stellar-access = { workspace = true }
+stellar-contract-utils = { workspace = true }
+stellar-macros = { workspace = true }
+
+[dev-dependencies]
+soroban-sdk = { workspace = true, features = ["testutils"] }
+spectra-mocks = { workspace = true }
+registry = { path = "../registry" }
+principal-token = { path = "../principal-token" }
+yield-token = { path = "../yield-token" }
+# Mainnet-fork e2e: deploy the Blend wrapper as IBT against a live pool.
+# Version matches the router crate's existing soroban-fork dev-dep.
+soroban-fork = "0.9"
+# Test-only: name `InvocationResourceLimits` to raise the fork e2e's per-
+# invocation memory cap above the default 40 MiB (Blend-pool WASM
+# instantiation dominates). Already transitive via soroban-sdk; pinned to
+# the resolved version.
+soroban-env-host = "=25.0.1"
+blend-fungible-vault-wrapper = { path = "../blend-fungible-vault-wrapper" }
+# Used only by the pricing vector test to parse NDJSON truth values
+# produced from the Solidity reference (PricingLibraryVectors.t.sol).
+serde = { version = "=1.0.228", default-features = false, features = ["derive"] }
+serde_json = { version = "=1.0.150" }
+# Property-based fuzz tests for order creation (E20) and fill amounts (E21).
+# Dev-only (test harness); not part of the deployed contract.
+proptest = "=1.11.0"

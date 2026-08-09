@@ -1,0 +1,22 @@
+[package]
+name = "yield-token"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[lib]
+crate-type = ["cdylib", "lib"]
+
+[dependencies]
+soroban-sdk = { workspace = true }
+soroban-token-sdk = { workspace = true }
+spectra-common = { workspace = true }
+spectra-math = { path = "../spectra-math" }
+stellar-tokens = { workspace = true }
+stellar-contract-utils = { workspace = true }
+stellar-macros = { workspace = true }
+
+[dev-dependencies]
+soroban-sdk = { workspace = true, features = ["testutils"] }
+spectra-mocks = { workspace = true }

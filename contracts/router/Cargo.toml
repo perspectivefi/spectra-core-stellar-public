@@ -1,0 +1,27 @@
+[package]
+name = "router"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+soroban-sdk = { workspace = true }
+stellar-tokens = { workspace = true }
+spectra-common = { workspace = true }
+stellar-access = { workspace = true }
+stellar-contract-utils = { workspace = true }
+stellar-macros = { workspace = true }
+bridge-traits = { workspace = true }
+
+[dev-dependencies]
+soroban-sdk = { workspace = true, features = ["testutils"] }
+soroban-fork = "0.9"
+limit-order-engine = { path = "../limit-order-engine" }
+spectra-mocks = { workspace = true }
+principal-token = { path = "../principal-token" }
+registry = { path = "../registry" }
+yield-token = { path = "../yield-token" }

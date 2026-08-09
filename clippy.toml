@@ -1,0 +1,12 @@
+## Clippy configuration for Spectra Soroban contracts
+## Enforced via pre-commit hook (scripts/pre-commit)
+
+# Allow unwrap/expect in test code (OZ pattern)
+allow-unwrap-in-tests = true
+
+# Disallow large types on the stack (Soroban contracts run in WASM with limited stack)
+stack-size-threshold = 512000
+
+# Cognitive complexity — stricter than clippy default (25). Contract code
+# has high audit overhead per branch, so force helpers earlier.
+cognitive-complexity-threshold = 15
