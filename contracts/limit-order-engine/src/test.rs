@@ -743,12 +743,11 @@ fn fill_one_order_smoke() {
     assert_eq!(status.filled_amount, making_amount);
 }
 
-/// A positive partial fill that prices to zero maker proceeds must revert
-/// with `ZeroTaking` instead of pulling the maker's token for no payment. A
-/// `PtForIbt` order trades PT below par, so a 1-wei fill floors `actual_taking`
-/// to zero.
+/// A positive fill priced at zero must revert with `ZeroTaking` instead of
+/// pulling the maker's token for no payment. A 1-wei implied rate an hour
+/// before maturity prices YT at exactly zero.
 #[test]
-fn fill_partial_zero_taking_reverts() {
+fn fill_partial_zero_price_reverts_zero_taking() {
     let s = make_setup();
     s.env.cost_estimate().budget().reset_unlimited();
     s.engine.set_fee_rate(&s.admin, &0i128);
@@ -757,42 +756,43 @@ fn fill_partial_zero_taking_reverts() {
     let taker = Address::generate(&s.env);
     let receiver = Address::generate(&s.env);
 
-    let making_amount = 1_000_000_000_000_000_000i128; // 1e18 PT
-    let (ibt_addr, _yt) = fund_with_pt_and_yt(&s, &maker, making_amount);
+    let making_amount = 1_000_000_000_000_000_000i128; // 1e18 YT
+    let (ibt_addr, yt_addr) = fund_with_pt_and_yt(&s, &maker, making_amount);
 
-    // Taker acquires IBT to pay with.
     let ibt_c = spectra_mocks::MockIbtContractClient::new(&s.env, &ibt_addr);
     let und_c = spectra_mocks::MockUnderlyingContractClient::new(&s.env, &ibt_c.query_asset());
     und_c.mint(&taker, &1_000_000i128);
     ibt_c.deposit(&1_000_000i128, &taker, &taker, &taker);
 
+    s.env
+        .ledger()
+        .with_mut(|li| li.timestamp = s.pt_maturity - 3_600);
     let order = Order {
         salt: 1,
         expiry: s.pt_maturity - 1,
-        order_type: OrderType::PtForIbt,
+        order_type: OrderType::YtForIbt,
         pt: s.pt_addr.clone(),
         maker: maker.clone(),
         receiver: maker.clone(),
         making_amount,
-        implied_rate: 100_000_000_000_000_000, // 10%
+        implied_rate: 1,
         maker_token_type: MakerTokenType::Ibt,
         fail_safe_rate: 0,
     };
     s.engine.register_order(&order);
 
     let live_until = s.env.ledger().sequence() + 100;
-    soroban_sdk::token::Client::new(&s.env, &s.pt_addr).approve(
+    soroban_sdk::token::Client::new(&s.env, &yt_addr).approve(
         &maker,
         &s.engine.address,
         &making_amount,
         &live_until,
     );
 
-    // Fill only 1 wei of PT → actual_taking floors to 0.
     let mut params = soroban_sdk::Vec::new(&s.env);
     params.push_back(spectra_common::limit_order_engine::FillOrderParams {
         order: order.clone(),
-        making_amount: 1,
+        making_amount,
         max_taking: i128::MAX,
     });
 
@@ -804,6 +804,151 @@ fn fill_partial_zero_taking_reverts() {
         &1_000_000_000_000_000_000i128,
     );
     assert_loe_error(r, LimitOrderEngineError::ZeroTaking);
+}
+
+/// Invariant: splitting a fill into dust fills of the same order in one batch
+/// never pays the maker or the fee collector less than a single fill.
+#[test]
+fn split_fills_never_underpay_maker_or_fee() {
+    let s = make_setup();
+    s.env.cost_estimate().budget().reset_unlimited();
+    let pt = soroban_sdk::token::Client::new(&s.env, &s.pt_addr);
+    let pt_c = principal_token::PrincipalTokenContractClient::new(&s.env, &s.pt_addr);
+    let ibt_addr = pt_c.get_ibt();
+    let ibt = soroban_sdk::token::Client::new(&s.env, &ibt_addr);
+    let ibt_c = spectra_mocks::MockIbtContractClient::new(&s.env, &ibt_addr);
+    let und_c = spectra_mocks::MockUnderlyingContractClient::new(&s.env, &ibt_c.query_asset());
+
+    let taker = Address::generate(&s.env);
+    und_c.mint(&taker, &1_000_000i128);
+    ibt_c.deposit(&1_000_000i128, &taker, &taker, &taker);
+
+    // A PtForIbt order filled with `n` params of `fill` PT each. Returns the
+    // IBT paid to the maker and to the fee collector.
+    let fill_order = |salt: u64, fill: i128, n: u32| -> (i128, i128) {
+        let maker = Address::generate(&s.env);
+        let making = fill * i128::from(n);
+        fund_with_pt_and_yt(&s, &maker, 1_000_000_000_000_000_000);
+        let mut order = make_order(
+            &s.env,
+            maker.clone(),
+            s.pt_addr.clone(),
+            OrderType::PtForIbt,
+            s.pt_maturity - 1,
+        );
+        order.salt = salt;
+        order.making_amount = making;
+        s.engine.register_order(&order);
+        let live_until = s.env.ledger().sequence() + 100;
+        pt.approve(&maker, &s.engine.address, &making, &live_until);
+
+        let mut params = soroban_sdk::Vec::new(&s.env);
+        for _ in 0..n {
+            params.push_back(spectra_common::limit_order_engine::FillOrderParams {
+                order: order.clone(),
+                making_amount: fill,
+                max_taking: i128::MAX,
+            });
+        }
+        let fees_before = ibt.balance(&s.fee_collector);
+        s.engine
+            .fill_orders(&taker, &taker, &params, &ibt_addr, &1_000i128);
+        (
+            ibt.balance(&maker),
+            ibt.balance(&s.fee_collector) - fees_before,
+        )
+    };
+
+    for (salt, fill) in [2i128, 3, 7, 11, 1].into_iter().enumerate() {
+        let n = 10;
+        let (maker_whole, fee_whole) = fill_order(2 * salt as u64, fill * i128::from(n), 1);
+        let (maker_split, fee_split) = fill_order(2 * salt as u64 + 1, fill, n);
+        assert!(
+            fee_whole > 0,
+            "fill {fill}: a positive fee must not round to zero"
+        );
+        assert!(
+            maker_split >= maker_whole,
+            "fill {fill}: {n} dust fills paid the maker {maker_split} vs {maker_whole}"
+        );
+        assert!(
+            fee_split >= fee_whole,
+            "fill {fill}: {n} dust fills paid fees of {fee_split} vs {fee_whole}"
+        );
+    }
+}
+
+/// PoC: a taker splits one fill into many dust fills of the same order in a
+/// single batch. Each fill rounds the maker's proceeds on its own; rounding
+/// up means the split pays the maker at least as much as one fill.
+#[test]
+fn poc_dust_fills_no_longer_underpay_maker() {
+    let s = make_setup();
+    s.env.cost_estimate().budget().reset_unlimited();
+    // No fee, so the whole difference is the maker's loss.
+    s.engine.set_fee_rate(&s.admin, &0i128);
+    let pt = soroban_sdk::token::Client::new(&s.env, &s.pt_addr);
+
+    // 1. Two makers each sell 20 raw PT for IBT on identical terms
+    //    (10% implied rate, one year to maturity: 1 PT ~ 0.909 IBT).
+    let making = 20i128;
+    let honest_maker = Address::generate(&s.env);
+    let victim_maker = Address::generate(&s.env);
+    let mut orders = std::vec::Vec::new();
+    for maker in [&honest_maker, &victim_maker] {
+        fund_with_pt_and_yt(&s, maker, 1_000_000_000_000_000_000);
+        let mut order = make_order(
+            &s.env,
+            maker.clone(),
+            s.pt_addr.clone(),
+            OrderType::PtForIbt,
+            s.pt_maturity - 1,
+        );
+        order.making_amount = making;
+        s.engine.register_order(&order);
+        let live_until = s.env.ledger().sequence() + 100;
+        pt.approve(maker, &s.engine.address, &making, &live_until);
+        orders.push(order);
+    }
+
+    // 2. The taker holds IBT to pay with.
+    let taker = Address::generate(&s.env);
+    let pt_c = principal_token::PrincipalTokenContractClient::new(&s.env, &s.pt_addr);
+    let ibt_addr = pt_c.get_ibt();
+    let ibt = soroban_sdk::token::Client::new(&s.env, &ibt_addr);
+    let ibt_c = spectra_mocks::MockIbtContractClient::new(&s.env, &ibt_addr);
+    let und_c = spectra_mocks::MockUnderlyingContractClient::new(&s.env, &ibt_c.query_asset());
+    und_c.mint(&taker, &1_000_000i128);
+    ibt_c.deposit(&1_000_000i128, &taker, &taker, &taker);
+
+    // 3. Honest fill: all 20 PT at once. The maker gets ceil(20 * 0.909) = 19 IBT.
+    let mut one_fill = soroban_sdk::Vec::new(&s.env);
+    one_fill.push_back(spectra_common::limit_order_engine::FillOrderParams {
+        order: orders[0].clone(),
+        making_amount: making,
+        max_taking: i128::MAX,
+    });
+    s.engine
+        .fill_orders(&taker, &taker, &one_fill, &ibt_addr, &100i128);
+
+    // 4. Exploit attempt: the same order repeated 10 times in one batch, 2 PT
+    //    each. Each fill pays ceil(2 * 0.909) = 2 IBT (it paid 1 when floored).
+    let mut dust_fills = soroban_sdk::Vec::new(&s.env);
+    for _ in 0..10 {
+        dust_fills.push_back(spectra_common::limit_order_engine::FillOrderParams {
+            order: orders[1].clone(),
+            making_amount: 2,
+            max_taking: i128::MAX,
+        });
+    }
+    s.engine
+        .fill_orders(&taker, &taker, &dust_fills, &ibt_addr, &100i128);
+
+    // 5. Both makers sold 20 PT; splitting now costs the taker 1 IBT more
+    //    instead of saving 8 (the floored engine paid 18 vs 10).
+    assert_eq!(pt.balance(&taker), 2 * making);
+    assert_eq!(ibt.balance(&honest_maker), 19);
+    assert_eq!(ibt.balance(&victim_maker), 20);
 }
 
 // ---------------------------------------------------------------------------

@@ -11,7 +11,7 @@ use spectra_mocks::{
     MockIbtContract, MockIbtContractClient, MockUnderlyingContract, MockUnderlyingContractClient,
 };
 use stellar_macros::when_not_paused;
-use stellar_tokens::fungible::{Base, ContractOverrides, FungibleToken};
+use stellar_tokens::fungible::{ContractOverrides, FungibleToken};
 use stellar_tokens::vault::Vault;
 
 /// Compiled YT wasm — see `scripts/build-wasm.sh`. Doubles as a valid wasm hash
@@ -103,7 +103,7 @@ impl FungibleToken for RefWrapper {
         <Vault as ContractOverrides>::transfer_from(e, &spender, &from, &to, amount);
     }
     fn decimals(e: &Env) -> u32 {
-        Base::decimals(e)
+        crate::share_decimals(e)
     }
 }
 

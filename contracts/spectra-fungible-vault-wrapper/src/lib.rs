@@ -357,6 +357,19 @@ pub fn init_base(
     access_control::grant_role_no_auth(e, &admin, &roles::REWARDS_HARVESTER, &admin);
 }
 
+/// The wrapper share decimals as stored by `init_base` (or a bespoke
+/// initializer): the wrapped share's decimals plus the virtual offset.
+///
+/// OZ `Vault::decimals` returns the *underlying asset* decimals plus the
+/// offset, which is what `FungibleToken::decimals` resolves to unless an
+/// instance overrides it. A wrapper share must report the share decimals, not
+/// the asset's: the PrincipalToken sizes its IBT unit from this value. Every
+/// instance must therefore route `FungibleToken::decimals` through this helper.
+/// The two only coincide when asset and share have the same decimals.
+pub fn share_decimals(e: &Env) -> u32 {
+    Base::decimals(e)
+}
+
 // ── internal ratio helpers — the literal Solidity `_previewWrap`/`_previewUnwrap` ──
 
 /// Vault-share balance held by this contract (`IERC20(vaultShare).balanceOf(this)`).
