@@ -553,16 +553,18 @@ fn pull_and_price(
             order.implied_rate,
             fee_rate,
         );
-        let fee = mul_div_floor(
+        // Both rounded up: the taker picks the fill size, so a floor would let
+        // many dust fills each underpay the maker and the fee by up to one unit.
+        let fee = mul_div_ceil(
             env,
             price_with_fee - spot_price,
             ibt_for_pricing,
             pricing::UNIT,
         );
-        let actual_taking = mul_div_floor(env, spot_price, ibt_for_pricing, pricing::UNIT);
+        let actual_taking = mul_div_ceil(env, spot_price, ibt_for_pricing, pricing::UNIT);
 
-        // A positive fill must pay the maker something; flooring can round the
-        // proceeds to zero for dust-sized fills or near-zero YT prices.
+        // A positive fill must pay the maker something; a zero price (dust YT
+        // near maturity) still prices the proceeds to zero.
         if net_making > 0 && actual_taking == 0 {
             panic_with_error!(env, LimitOrderEngineError::ZeroTaking);
         }
@@ -1005,5 +1007,18 @@ fn mul_div_floor(env: &Env, a: i128, b: i128, c: i128) -> i128 {
         .mul(&I256::from_i128(env, b))
         .div(&I256::from_i128(env, c))
         .to_i128()
+        .unwrap_or_else(|| panic_with_error!(env, LimitOrderEngineError::PriceOverflow))
+}
+
+/// (a * b) / c rounded up for `c > 0`, via I256 to avoid i128 overflow on `a*b`.
+fn mul_div_ceil(env: &Env, a: i128, b: i128, c: i128) -> i128 {
+    use soroban_sdk::I256;
+    let product = I256::from_i128(env, a).mul(&I256::from_i128(env, b));
+    let c = I256::from_i128(env, c);
+    let mut q = product.div(&c);
+    if q.mul(&c) < product {
+        q = q.add(&I256::from_i128(env, 1));
+    }
+    q.to_i128()
         .unwrap_or_else(|| panic_with_error!(env, LimitOrderEngineError::PriceOverflow))
 }

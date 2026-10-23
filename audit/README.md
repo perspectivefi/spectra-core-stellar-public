@@ -16,11 +16,26 @@ informational. Thirty-one were confirmed and 25 were fixed. The remaining
 confirmed findings are marked "Acknowledged" in the report. Consult each
 finding for its exact status, context, and remediation.
 
-The production contract sources in this release correspond to audited fix
-revision `b1f0641e790ae36a474ebed4b360b866caebc7bb` after normalization of the
+The production contract sources in the original public release
+(`28d955f278162f596bc763fc444272e2a23ff34a`) correspond to audited fix revision
+`b1f0641e790ae36a474ebed4b360b866caebc7bb` after normalization of the
 public-release SPDX header additions. Tests, package metadata, build tooling,
 CI, and publication documentation are not part of that source-correspondence
 statement.
+
+## Subsequent contract changes
+
+The current source tree includes the following changes after the audited
+revision. These changes are not covered by the included Certora report.
+
+| Component | Change |
+| --- | --- |
+| Limit-order engine | Round maker proceeds and fees up for every order type at the pricing step, preventing dust-fill underpayment from those calculations. |
+| Spectra vault wrapper base | Expose the stored share decimals through `share_decimals`. |
+| Blend vault wrapper | Use the base share-decimal helper for `decimals`; Blend's stored share and asset decimals coincide. |
+
+Dependency updates are recorded in `Cargo.lock`. Source correspondence does not
+establish identical compiled WASM or the version of a deployed contract.
 
 The complete report is included as
 [`Certora - Spectra Core Final Report (2).pdf`](Certora%20-%20Spectra%20Core%20Final%20Report%20(2).pdf).

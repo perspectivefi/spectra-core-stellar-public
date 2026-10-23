@@ -27,8 +27,11 @@ reuse `init_base` (or write a bespoke `initialize`, as Blend does, when the IBT 
 decimals can be read). Each instance also implements `FungibleToken` (`type ContractType = Vault`)
 and is responsible for pause-gating its own methods — `transfer`/`transfer_from` via
 `#[when_not_paused]` (Solidity's `_update` `whenNotPaused`), and its `deposit`/`mint`/`withdraw`/
-`redeem`. The in-test `RefWrapper` in `test.rs` is a minimal instance used to exercise the base
-scaffolding.
+`redeem`. Each instance must also override `FungibleToken::decimals` with `share_decimals`: the OZ
+`Vault` default reports the underlying asset's decimals plus the offset, while a wrapper share must
+report the wrapped share's decimals (the PrincipalToken sizes its IBT unit from it). The two only
+coincide when asset and share have the same decimals. The in-test `RefWrapper` in `test.rs` is a
+minimal instance used to exercise the base scaffolding.
 
 ## Notes on the trait design
 

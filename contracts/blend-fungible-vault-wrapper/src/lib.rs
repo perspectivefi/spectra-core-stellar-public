@@ -372,6 +372,13 @@ fn refresh_b_rate(e: &Env) {
 impl FungibleToken for BlendFungibleVaultWrapperContract {
     type ContractType = Vault;
 
+    /// Share decimals as stored at construction. Blend positions have no
+    /// separate share token, so the stored value equals the asset decimals;
+    /// the override keeps every wrapper on the same rule.
+    fn decimals(e: &Env) -> u32 {
+        spectra_fungible_vault_wrapper::share_decimals(e)
+    }
+
     #[when_not_paused]
     fn transfer(e: &Env, from: Address, to: MuxedAddress, amount: i128) {
         <Vault as ContractOverrides>::transfer(e, &from, &to, amount);

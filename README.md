@@ -1,8 +1,9 @@
 # spectra-core-stellar
 
-Soroban implementation of the Spectra yield-tokenization protocol. The
-production contracts in this release correspond to the audited source revision
-described in the [included Certora audit documentation](audit/README.md).
+Soroban implementation of the Spectra yield-tokenization protocol. The original
+public release corresponds to the audited source revision described in the
+[included Certora audit documentation](audit/README.md). That document also lists
+the subsequent contract changes included in the current source tree.
 
 ## Build and run tests
 
